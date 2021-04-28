@@ -1,5 +1,6 @@
 <script>
 	import { callWikiApi } from "./wiki-api.js";
+	import { tick } from "svelte";
 	import { scale } from "svelte/transition";
 	import { flip } from "svelte/animate";
 
@@ -7,19 +8,46 @@
 
 	let currentSort = "default";
 	let limit = 10;
-	let query = "";
 	let results = [];
+	let query = "";
 
+	// Reactive variable: if any of the variables on the right part are updated
+	// then the left part is automatically updated as well. We also check first
+	// if query is not empty
 	$: searchURL = query && `${wikiApiURL}&search=${encodeURI(query)}&limit=${limit}`;
+	// Reactive statement: same principle, if any of the variables is updated
+	// then trigger the statement
+	$: if (!query) {
+		results = [];
+	};
 
 	function onKeydownHandler(e) {
 		if (e.key === "Enter") {
-			if (!query) return;
-			callWikiApi(searchURL).then(data => results = data);
+			callWikiApi(searchURL).then(data => {
+				results = data;
+				sort();
+			});
 		}
 	}
 
-	function sort(by) {
+	async function fetchResults() {
+		if (!query) return;
+		// tick helps us wait for all the changes to occur before persuing
+		// here we want to wait for searchURL to be updated with new limit
+		await tick();
+		callWikiApi(searchURL).then(data => {
+			results = data
+			sort();
+		});
+	}
+
+	function sort(by = false) {
+		if (!by) {
+			by = currentSort;
+			if (["+", "-"].includes(by[by.length - 1])) {
+				by = by.slice(0, -1);
+			}
+		}
 		switch(by) {
 			case "default":
 				currentSort = "default";
@@ -28,36 +56,58 @@
 			case "az":
 				if (currentSort.indexOf("+") !== -1) {
 					currentSort = "az-";
-					results = results.sort((a, b) => a.title.toLowerCase() < b.title.toLowerCase());
+					results = results.sort((a, b) => sortTitle(b, a));
 				} else {
 					currentSort = "az+";
-					results = results.sort((a, b) => a.title.toLowerCase() > b.title.toLowerCase());
+					results = results.sort((a, b) => sortTitle(a, b));
 				}
 				break;
 			case "last":
 				if (currentSort.indexOf("+") !== -1) {
 					currentSort = "last-";
-					results = results.sort((a, b) => a.touched < b.touched);
+					results = results.sort((a, b) => sortTime(b, a));
 				} else {
 					currentSort = "last+";
-					results = results.sort((a, b) => a.touched > b.touched);
+					results = results.sort((a, b) => sortTime(a, b));
 				}
 				break;
 		}
+	}
+
+	function sortTitle(a, b) {
+		const titleA = a.title.toLowerCase();
+		const titleB = b.title.toLowerCase();
+		if (titleA > titleB) return 1;
+		if (titleA < titleB) return -1;
+		return 0;
+	}
+
+	function sortTime(a, b) {
+		const timeA = a.touched;
+		const timeB = b.touched;
+		if (timeA > timeB) return 1;
+		if (timeA < timeB) return -1;
+		return 0;
 	}
 </script>
 
 <main>
 	<img src="https://en.wikipedia.org/static/images/project-logos/enwiki.png" alt="Wikipedia" />
 	<div class="search">
+		<!-- use "bind:" to link a variable to an element's property -->
+		<!-- use "on:" to link a listener to an element's event -->
 		<input type="search" bind:value={query} on:keydown={onKeydownHandler}>
-		<select bind:value={limit}>
+		<select bind:value={limit} on:change={fetchResults}>
 			<option selected>10</option>
 			<option>20</option>
 			<option>50</option>
 		</select>
 		{#if results.length}
 			Sort by:
+			<!--
+				class:className allows the "className" to be quickly be applied
+				only if the boolean is true
+			-->
 			<button on:click={() => sort("default")}
 				class:active={currentSort === "default"}>Relevance</button>
 			<button on:click={() => sort("az")}
@@ -70,7 +120,18 @@
 	</div>
 	<p>{searchURL}</p>
 	<div class="results">
-		{#each results as result, i (result)}
+		<!-- 
+			in:scale triggers a scale + fade-in transition when the element is
+			created. If you want to trigger the transition when the element is
+			deleted, simply change "in:" for "out:". And if you want for both,
+			use "transition:"
+		-->
+		<!--
+			animate:flip animates the element from a visual state A to B,
+			it will compare the initial state and the target state and automatically
+			transition between the two. It only works in a keyed "#each" block
+		-->
+		{#each results as result, i (result.title)}
 			<a class="result"
 				href={result.url}
 				target="_blank"
