@@ -1,7 +1,7 @@
-const wikiApiURL = "https://en.wikipedia.org/w/api.php";
+const wikiApiURL = "https://en.wikipedia.org/w/api.php?origin=*&format=json&action=query";
 
-let pageUrl = `${wikiApiURL}?origin=*&format=json&action=query&prop=extracts|info|pageimages|images&exchars=300&explaintext&titles=`;
-let imageUrl = `${wikiApiURL}?origin=*&format=json&action=query&prop=imageinfo&iiprop=url&titles=`;
+let pageUrl = `${wikiApiURL}&prop=extracts|info|pageimages|images&exchars=300&explaintext&titles=`;
+let imageUrl = `${wikiApiURL}&prop=imageinfo&iiprop=url&titles=`;
 
 async function callWikiApi(searchURL) {
 	const res = await fetch(searchURL);
