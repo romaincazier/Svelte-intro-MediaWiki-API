@@ -10,17 +10,13 @@
 	let query = "";
 	let results = [];
 
-	$: searchURL = query && `${wikiApiURL}?origin=*&format=json&action=opensearch&search=${encodeURI(query)}&limit=${limit}`;
+	$: searchURL = query && `${wikiApiURL}&search=${encodeURI(query)}&limit=${limit}`;
 
 	function onKeydownHandler(e) {
 		if (e.key === "Enter") {
-			fetchResults();
+			if (!query) return;
+			callWikiApi(searchURL).then(data => results = data);
 		}
-	}
-
-	function fetchResults() {
-		if (!query) return;
-		callWikiApi(searchURL).then(data => results = data);
 	}
 
 	function sort(by) {
