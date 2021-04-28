@@ -51,7 +51,7 @@
 	<img src="https://en.wikipedia.org/static/images/project-logos/enwiki.png" alt="Wikipedia" />
 	<div class="search">
 		<input type="search" bind:value={query} on:keydown={onKeydownHandler}>
-		<select bind:value={limit} on:change={fetchResults}>
+		<select bind:value={limit}>
 			<option selected>10</option>
 			<option>20</option>
 			<option>50</option>
