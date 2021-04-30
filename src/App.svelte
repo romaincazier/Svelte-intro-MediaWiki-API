@@ -105,8 +105,8 @@
 		{#if results.length}
 			Sort by:
 			<!--
-				class:className allows the "className" to be quickly be applied
-				only if the boolean is true
+				class:className allows the "className" to be toggled on or off
+				depending on a boolean value
 			-->
 			<button on:click={() => sort("default")}
 				class:active={currentSort === "default"}>Relevance</button>
